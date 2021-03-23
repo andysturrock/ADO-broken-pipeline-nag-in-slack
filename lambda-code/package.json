@@ -1,0 +1,36 @@
+{
+  "name": "ado-broken-pipeline-nag-in-slack",
+  "version": "1.0.0",
+  "description": "Put a nagging message in a Slack channel when an Azure DevOps pipeline is in failed state.",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest --watch --coverage -c jest.config.js",
+    "lambda": "tsc && node dist/create_pipeline.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/andysturrock/ADO-broken-pipeline-nag-in-slack.git"
+  },
+  "keywords": [
+    "Slack",
+    "Azure",
+    "DevOps",
+    "pipeline"
+  ],
+  "author": "Andy Sturrock",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/andysturrock/ADO-broken-pipeline-nag-in-slack/issues"
+  },
+  "homepage": "https://github.com/andysturrock/ADO-broken-pipeline-nag-in-slack#readme",
+  "devDependencies": {
+    "@types/pino": "^6.3.6",
+    "dotenv": "^8.2.0",
+    "tslint": "^6.1.3",
+    "typescript": "^4.2.3"
+  },
+  "dependencies": {
+    "azure-devops-node-api": "^10.2.1",
+    "pino": "^6.11.2"
+  }
+}
