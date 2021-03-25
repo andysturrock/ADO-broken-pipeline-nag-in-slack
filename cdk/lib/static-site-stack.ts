@@ -5,19 +5,9 @@ import * as route53 from '@aws-cdk/aws-route53';
 import * as acm from '@aws-cdk/aws-certificatemanager';
 import * as cloudfront from '@aws-cdk/aws-cloudfront';
 import * as targets from '@aws-cdk/aws-route53-targets';
-import { RedirectProtocol } from '@aws-cdk/aws-s3';
-require('dotenv').config()
+import getEnv from './common';
 
-function getEnv(name: string): string {
-  const val = process.env[name];
-  if (!val) {
-      console.error(`${name} env var not set`);
-      process.exit(1);
-  }
-  return val;
-}
-
-export class CdkStack extends cdk.Stack {
+export class StaticSiteStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
@@ -28,7 +18,7 @@ export class CdkStack extends cdk.Stack {
     const customDomainName = getEnv('CUSTOM_DOMAIN_NAME');
     const r53ZoneId = getEnv('R53_ZONE_ID');
 
-    const zone = route53.HostedZone.fromHostedZoneAttributes(this, 'CatsVsDogsR53Zone', {
+    const zone = route53.HostedZone.fromHostedZoneAttributes(this, 'R53Zone', {
       zoneName: customDomainName,
       hostedZoneId: r53ZoneId,
     });

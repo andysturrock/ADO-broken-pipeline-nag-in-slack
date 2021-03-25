@@ -4,21 +4,20 @@ import * as vm from "azure-devops-node-api";
 import * as ba from "azure-devops-node-api/BuildApi";
 import * as bi from "azure-devops-node-api/interfaces/BuildInterfaces";
 
-require('dotenv').config()
-
-const logger = cm.logger;
-
-async function run() {
+async function lambdaHandler(event: any): Promise<any> {
   try {
+    const queries = JSON.stringify(event.queryStringParameters);
+
     const vsts: vm.WebApi = await cm.getWebApi();
     const vstsBuild: ba.IBuildApi = await vsts.getBuildApi();
 
-    const project = cm.getProject();
-    logger.info(`Looking at project: ${project}`);
+    const project = await cm.getProject();
+    const repoRegex = await cm.getRepoRegex();
+    console.info(`Looking at project: ${project} for repos like ${repoRegex}`);
     
     const definitionReferences: bi.DefinitionReference[] = await vstsBuild.getDefinitions(project);
     
-    logger.info(`There are ${definitionReferences.length} build definition(s)`);
+    console.info(`There are ${definitionReferences.length} build definition(s)`);
 
     let definitionReference: bi.DefinitionReference;
     for(definitionReference of definitionReferences) {
@@ -26,9 +25,8 @@ async function run() {
       
       const repo: bi.BuildRepository = buildDefinition.repository!;
       
-      const repoRegex = cm.getRepoRegex();
       if(repo.name!.match(repoRegex)) {
-        logger.debug(`Checking ${definitionReference.name} (${definitionReference.id}) in repo ${repo.name}`);
+        console.debug(`Checking ${definitionReference.name} (${definitionReference.id}) in repo ${repo.name}`);
         const builds: bi.Build[] = await vstsBuild.getBuilds(
           project, 
           [buildDefinition.id!],      // definitions?: number[] 
@@ -56,19 +54,28 @@ async function run() {
         const build = builds[0]
         // We're OK with cancelled etc, just flag up actual failed builds.
         if(build.result == bi.BuildResult.Failed) {
-          logger.error(`Last build of ${definitionReference.name} has Failed state`)
+          console.error(`Last build of ${definitionReference.name} has Failed state`)
           // console.log(`build = ${JSON.stringify(build)}`)
           const commit = `${repo.url}/commit/${build.sourceVersion}`;
           console.log(`possibly this? ${commit}`);
         }
       } else {
-        logger.debug(`Ignoring ${definitionReference.name} (${definitionReference.id}) in repo ${repo.name}`);
+        console.debug(`Ignoring ${definitionReference.name} (${definitionReference.id}) in repo ${repo.name}`);
       }
+    }
+
+    return {
+      statusCode: 200,
+      body: `Queries: ${queries}`
     }
   }
   catch (err) {
-    logger.error(`Error: ${err.stack}`);
+    console.error(`Error: ${err.stack}`);
+    return {
+      statusCode: 500,
+      body: "Error"
+    }
   }
 }
 
-run()
+export default lambdaHandler;
