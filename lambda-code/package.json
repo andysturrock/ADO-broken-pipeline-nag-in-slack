@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-secrets-manager": "^3.9.0",
+    "@slack/webhook": "^6.0.0",
     "azure-devops-node-api": "^10.2.1",
     "dotenv": "^8.2.0"
   }

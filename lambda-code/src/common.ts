@@ -83,5 +83,6 @@ export async function getRepoRegex(): Promise<string> {
   return getEnv("REPO_REGEX");
 }
 
-
-
+export async function getSlackWebhookURL(): Promise<string> {
+  return getEnv("SLACK_WEBHOOK_URL");
+}

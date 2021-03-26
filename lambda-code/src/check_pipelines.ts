@@ -4,6 +4,8 @@ import * as vm from "azure-devops-node-api";
 import * as ba from "azure-devops-node-api/BuildApi";
 import * as bi from "azure-devops-node-api/interfaces/BuildInterfaces";
 
+import { postToWebhook } from './slack';
+
 async function lambdaHandler(event: any): Promise<any> {
   try {
     const queries = JSON.stringify(event.queryStringParameters);
@@ -26,7 +28,8 @@ async function lambdaHandler(event: any): Promise<any> {
       const repo: bi.BuildRepository = buildDefinition.repository!;
       
       if(repo.name!.match(repoRegex)) {
-        console.debug(`Checking ${definitionReference.name} (${definitionReference.id}) in repo ${repo.name}`);
+        console.debug(`Checking ${definitionReference.name} in repo ${repo.name}`);
+
         const builds: bi.Build[] = await vstsBuild.getBuilds(
           project, 
           [buildDefinition.id!],      // definitions?: number[] 
@@ -56,12 +59,12 @@ async function lambdaHandler(event: any): Promise<any> {
           console.debug(`No (failed) builds for ${definitionReference.name}`);
         }
         // We're OK with cancelled etc, just flag up actual failed builds.
-        // console.log(`build.result = ${build.result}`)
-        // console.log(`build = ${JSON.stringify(build)}`)
         if(build && build.result == bi.BuildResult.Failed) {
           console.error(`Last build of ${definitionReference.name} has Failed state`)
           const commit = `${repo.url}/commit/${build.sourceVersion}`;
           console.info(`Possibly this commit: ${commit}`);
+          const slackMessage = `Last build of ${definitionReference.name} has Failed state.\nPossibly this commit: ${commit}.`
+          await postToWebhook(slackMessage);
         }
       } else {
         console.debug(`Ignoring ${definitionReference.name} (${definitionReference.id}) in repo ${repo.name}`);
