@@ -4,7 +4,7 @@
   "description": "Put a nagging message in a Slack channel when an Azure DevOps pipeline is in failed state.",
   "scripts": {
     "test": "jest --watch --coverage -c jest.config.js",
-    "test_lambda": "tsc && node dist/check_pipeline.js",
+    "build": "tsc && rm -f ./lambda.zip && zip -r ./lambda.zip node_modules && zip -j ./lambda.zip dist/*.js && mv ./lambda.zip dist",
     "lambda": "tsc && node dist/local_test"
   },
   "repository": {

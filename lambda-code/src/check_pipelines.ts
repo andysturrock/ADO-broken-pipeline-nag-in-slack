@@ -51,13 +51,17 @@ async function lambdaHandler(event: any): Promise<any> {
           // repositoryType?: string)
         );
           
-        const build = builds[0]
+        const build = builds[0];
+        if(!build) {
+          console.debug(`No (failed) builds for ${definitionReference.name}`);
+        }
         // We're OK with cancelled etc, just flag up actual failed builds.
-        if(build.result == bi.BuildResult.Failed) {
+        // console.log(`build.result = ${build.result}`)
+        // console.log(`build = ${JSON.stringify(build)}`)
+        if(build && build.result == bi.BuildResult.Failed) {
           console.error(`Last build of ${definitionReference.name} has Failed state`)
-          // console.log(`build = ${JSON.stringify(build)}`)
           const commit = `${repo.url}/commit/${build.sourceVersion}`;
-          console.log(`possibly this? ${commit}`);
+          console.info(`Possibly this commit: ${commit}`);
         }
       } else {
         console.debug(`Ignoring ${definitionReference.name} (${definitionReference.id}) in repo ${repo.name}`);
@@ -78,4 +82,4 @@ async function lambdaHandler(event: any): Promise<any> {
   }
 }
 
-export default lambdaHandler;
+export { lambdaHandler };

@@ -1,4 +1,4 @@
-import lambdaHandler from './check_pipeline';
+import { lambdaHandler } from './check_pipelines';
 
 require('dotenv').config()
 
