@@ -39,13 +39,13 @@ async function getSecret(secretKey: string) : Promise<string | undefined> {
   }
 }
 
-async function getEnv(name: string): Promise<string> {
+async function getEnv(name: string, optional?: boolean): Promise<string> {
   // Try getting from the environment first.
   let val : string | undefined = process.env[name];
   // If it's not there then try AWS Secrets Manager
   if (!val) {
     val = await getSecret(name);
-    if (!val) {
+    if (!val && !optional) {
       throw new Error(`${name} variable not set in environment or AWS Secrets Manager`);
     }
   }
@@ -86,3 +86,8 @@ export async function getRepoRegex(): Promise<string> {
 export async function getSlackWebhookURL(): Promise<string> {
   return getEnv("SLACK_WEBHOOK_URL");
 }
+
+export async function getPermissionsBoundary() : Promise<string> {
+  return getEnv("IAM_PERMISSIONS_BOUNDARY", false");
+}
+
