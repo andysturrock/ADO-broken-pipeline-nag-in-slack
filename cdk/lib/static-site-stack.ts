@@ -5,11 +5,18 @@ import * as route53 from '@aws-cdk/aws-route53';
 import * as acm from '@aws-cdk/aws-certificatemanager';
 import * as cloudfront from '@aws-cdk/aws-cloudfront';
 import * as targets from '@aws-cdk/aws-route53-targets';
+import * as iam from "@aws-cdk/aws-iam";
 import getEnv from './common';
 
 export class StaticSiteStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
+    const policyArn = getEnv('AWS_BOUNDARY_POLICY_ARN');
+    if(policyArn) {
+      const boundary = iam.ManagedPolicy.fromManagedPolicyArn(this, 'Boundary', policyArn);
+      iam.PermissionsBoundary.of(this).apply(boundary);
+    }
 
     // Can be a top level domain (eg example.com) or (slackapps.example.com)
     // If you are using a subdomain, you must do the delegation outside of this script.
@@ -19,8 +26,8 @@ export class StaticSiteStack extends cdk.Stack {
     const r53ZoneId = getEnv('R53_ZONE_ID');
 
     const zone = route53.HostedZone.fromHostedZoneAttributes(this, 'R53Zone', {
-      zoneName: customDomainName,
-      hostedZoneId: r53ZoneId,
+      zoneName: customDomainName!,
+      hostedZoneId: r53ZoneId!,
     });
 
     const wwwBucket = new s3.Bucket(this, "www-url", {
