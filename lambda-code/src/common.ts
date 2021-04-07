@@ -88,6 +88,6 @@ export async function getSlackWebhookURL(): Promise<string> {
 }
 
 export async function getPermissionsBoundary() : Promise<string> {
-  return getEnv("IAM_PERMISSIONS_BOUNDARY", false");
+  return getEnv("IAM_PERMISSIONS_BOUNDARY", false);
 }
 
