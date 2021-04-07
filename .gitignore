@@ -104,4 +104,4 @@ dist
 .tern-port
 
 # CDK output
-cdk.out/
+**/cdk.out/
