@@ -54,18 +54,23 @@ async function lambdaHandler(event: any): Promise<any> {
           // repositoryId?: string,
           // repositoryType?: string)
         );
-          
+
         const build = builds[0];
         if(!build) {
           console.debug(`No (failed) builds for ${definitionReference.name}`);
         }
         // We're OK with cancelled etc, just flag up actual failed builds.
         if(build && build.result == bi.BuildResult.Failed) {
-          console.error(`Last build of ${definitionReference.name} has Failed state`)
-          const commit = `${repo.url}/commit/${build.sourceVersion}`;
-          console.info(`Possibly this commit: ${commit}`);
-          const slackMessage = `Last build of ${definitionReference.name} has Failed state.\nPossibly this commit: ${commit}.`
-          await postToWebhook(slackMessage);
+          const sourceBranch = build.sourceBranch;
+          if(sourceBranch && (sourceBranch != "refs/heads/main" && sourceBranch != "refs/heads/master")) {
+            console.info(`Skipping reporting borked build for branch ${sourceBranch}`)
+          } else {
+            console.info(`Last build of ${definitionReference.name} is borked (state is "Failed").`)
+            const commit = `${repo.url}/commit/${build.sourceVersion}`;
+            console.info(`Possibly this commit: ${commit}`);
+            const slackMessage = `Last build of ${definitionReference.name} is borked (state is "Failed").\nPossibly this commit: ${commit}.`
+            await postToWebhook(slackMessage);
+          }
         }
       } else {
         console.debug(`Ignoring ${definitionReference.name} (${definitionReference.id}) in repo ${repo.name}`);
