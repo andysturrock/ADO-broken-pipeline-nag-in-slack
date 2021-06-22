@@ -4,6 +4,7 @@ import * as s3Deployment from '@aws-cdk/aws-s3-deployment';
 import * as route53 from '@aws-cdk/aws-route53';
 import * as acm from '@aws-cdk/aws-certificatemanager';
 import * as cloudfront from '@aws-cdk/aws-cloudfront';
+import * as cloudfrontorigins from '@aws-cdk/aws-cloudfront-origins';
 import * as targets from '@aws-cdk/aws-route53-targets';
 import * as iam from "@aws-cdk/aws-iam";
 import getEnv from './common';
@@ -30,39 +31,45 @@ export class StaticSiteStack extends cdk.Stack {
       hostedZoneId: r53ZoneId!,
     });
 
-    const wwwBucket = new s3.Bucket(this, "www-url", {
+    const wwwBucket = new s3.Bucket(this, "www-bucket", {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       bucketName: `www.${customDomainName}`,
-      publicReadAccess: true,
-      websiteIndexDocument: "index.html",
-      websiteErrorDocument: "error.html",
+      // publicReadAccess: false,
+      // websiteIndexDocument: "index.html",
+      // websiteErrorDocument: "error.html",
     });
 
-    const certificateArn = new acm.DnsValidatedCertificate(this, 'SiteCertificate', {
+    const certificate = new acm.DnsValidatedCertificate(this, 'SiteCertificate', {
       domainName: `www.${customDomainName}`,
       subjectAlternativeNames: [`${customDomainName}`],
       hostedZone: zone,
       validation: acm.CertificateValidation.fromDns(zone),
       region: 'us-east-1', // Cloudfront only checks this region for certificates.
-    }).certificateArn;
+    });
 
-    // CloudFront distribution that provides HTTPS
-    const distribution = new cloudfront.CloudFrontWebDistribution(this, 'SiteDistribution', {
-        aliasConfiguration: {
-            acmCertRef: certificateArn,
-            names: [ `${customDomainName}`, `www.${customDomainName}` ],
-            sslMethod: cloudfront.SSLMethod.SNI,
-            securityPolicy: cloudfront.SecurityPolicyProtocol.TLS_V1_1_2016,
-        },
-        originConfigs: [
-            {
-                customOriginSource: {
-                    domainName: wwwBucket.bucketWebsiteDomainName,
-                    originProtocolPolicy: cloudfront.OriginProtocolPolicy.HTTP_ONLY,
-                },          
-                behaviors : [ {isDefaultBehavior: true}],
-            }
-        ]
+    const originAccessIdentity = new cloudfront.OriginAccessIdentity(this, 'OriginAccessIdentity', {
+      comment: 'Origin identity to serve s3 bucket content via CloudFront'
+    });
+    const s3Origin = new cloudfrontorigins.S3Origin(wwwBucket, {
+      originAccessIdentity: originAccessIdentity
+    });
+    const cachePolicy = cloudfront.CachePolicy.fromCachePolicyId(this, 'CachePolicy', '658327ea-f89d-4fab-a63d-7e88639e58f6');
+    const behavior: cloudfront.BehaviorOptions = {
+      origin: s3Origin,
+      allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
+      cachePolicy: cachePolicy,
+      compress: true,
+      viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS
+    }
+    const distribution = new cloudfront.Distribution(this, 'CFDistribution', {
+      defaultBehavior: behavior,
+      certificate: certificate,
+      enableIpv6: false,
+      enableLogging: true,
+      logBucket: wwwBucket,
+      logFilePrefix: 'cf-logs/',
+      priceClass: cloudfront.PriceClass.PRICE_CLASS_ALL,
+      domainNames: [`www.${customDomainName}`]
     });
 
     // Route53 alias records for the CloudFront distribution from base of domain and www.domain
